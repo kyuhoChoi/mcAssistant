@@ -1,12 +1,14 @@
 import os
+import pymel.core as pm
 
 mcCharFile = 'D:/Users/kyuho_choi/Desktop/MC/MC.ma'
 jnts = []
 
-def makeMCAssets(sourceFolderPath, outputFolderPath):
+def makeMCAssets(sourceFolderPath, outputFolderPath, getAnimClip=True, getPlayblast=True):
     # sourceFolderPath = 'Z:/2016_Dark_Avenger3/B_production/scene/animation/motioncapture/FBX/choice/161227'
     # outputFolderPath = 'D:/Users/kyuho_choi/Desktop/motionCapture'
 
+    # 입력값 검증
     sourceFolderPath = sourceFolderPath.replace('\\','/')
     outputFolderPath = outputFolderPath.replace('\\','/')
 
@@ -16,12 +18,14 @@ def makeMCAssets(sourceFolderPath, outputFolderPath):
     if not os.path.exists(sourceFolderPath):
         raise AttributeError(u'소스 폴더가 존재하지 않습니다.') 
 
+    # 처리할 모캡파일 리스트 확보
     sourceFiles = []
     for item in os.listdir(sourceFolderPath):
         ext = os.path.splitext(item)[-1]
         if ext in ['.fbx','.mb','.ma']:
             sourceFiles.append( sourceFolderPath+'/'+item)
 
+    # 처리결과 저장할 곳 세팅 
     mocapInputFolder    = outputFolderPath + '/inputFiles'   
     animClipFolder      = outputFolderPath + '/animClip'
     motionCaptureFolder = outputFolderPath + '/motionCapture'
@@ -30,6 +34,7 @@ def makeMCAssets(sourceFolderPath, outputFolderPath):
         if not os.path.exists(path):
             os.makedirs(path)
 
+    # 시작~
     for mocapSrcFile in sourceFiles:
         batch(mocapSrcFile)
 
@@ -78,10 +83,11 @@ def batch(mocapSrcFile):
             
     charSets = []
     animClips = []
-    for sourceNamespace, prefix in zip(mocapNamespaces,charPrefixs):
+    for sourceNamespace, prefix in zip( mocapNamespaces, charPrefixs ):
         #sourceNamespace = mocapNamespaces[0]
         #prefix = charPrefixs[0]
         
+        # 캐릭터 수량에 따른 조정 내용
         importOpt = {"returnNewNodes":True }
         prefix_ = ''
         subfix_ = ''
@@ -92,11 +98,7 @@ def batch(mocapSrcFile):
         
         # 모션캡쳐 캐릭터 파일 임포트
         newNodes = pm.importFile( mcCharFile, **importOpt )
-        
-        # 캐릭터 셋 이름 확인
-        charSet = pm.ls( newNodes, type='character')[0]
-        charSets.append( charSet )
-        
+       
         # 모션캡쳐 조인트에서 키값 복 붙
         errorLine = []
         for jnt in jnts:
@@ -124,6 +126,10 @@ def batch(mocapSrcFile):
         
                     # 그냥 값을 입력받아서 적어넣음.
                     target_attr.set( source_attr.get() )
+        
+        # 캐릭터 셋 이름 확인
+        charSet = pm.ls( newNodes, type='character')[0]
+        charSets.append( charSet )
         
         # 애니메이션 클립 생성
         animClip = pm.clip(charSet, name='animClip', scheduleClip=True, allAbsolute=True, animCurveRange=True)[0]
